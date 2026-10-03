@@ -11,16 +11,20 @@
             padding: 20px;
             max-width: 500px;
             margin: 0 auto;
+            background: #fffafc;
+            color: #4a4146;
         }
 
         h1 {
             margin-bottom: 30px;
             font-size: 28px;
+            color: #6b5360;
         }
 
         h2 {
             margin-top: 35px;
             font-size: 22px;
+            color: #6b5360;
         }
 
         p {
@@ -36,6 +40,47 @@
             font-size: 16px;
             padding: 8px;
             margin-bottom: 20px;
+            border: 1px solid #d8c8d0;
+            border-radius: 10px;
+            background: #ffffff;
+            color: #4a4146;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: #b99aaa;
+        }
+
+        /*
+         * 出勤・退勤を横並びにして、
+         * 枠同士をピッタリくっつける
+         */
+        .time-row {
+            display: flex;
+            gap: 0;
+            align-items: flex-start;
+            overflow-x: auto;
+            padding-bottom: 2px;
+        }
+
+        .time-row > div {
+            flex: 0 0 180px;
+        }
+
+        /*
+         * 横並び部分だけ枠を接続した見た目にする
+         */
+        .time-row input {
+            border-radius: 0;
+        }
+
+        .time-row > div:first-child input {
+            border-radius: 10px 0 0 10px;
+        }
+
+        .time-row > div:last-child input {
+            border-radius: 0 10px 10px 0;
         }
 
         button {
@@ -43,6 +88,19 @@
             padding: 10px 24px;
             margin-top: 10px;
             margin-right: 8px;
+            border: none;
+            border-radius: 10px;
+            background: #d9b8c8;
+            color: #ffffff;
+            cursor: pointer;
+        }
+
+        button:active {
+            opacity: 0.8;
+        }
+
+        #reset {
+            background: #c8b9c0;
         }
 
         #result {
@@ -50,9 +108,10 @@
             font-weight: bold;
             margin-top: 25px;
             padding: 15px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
+            border: 1px solid #dfccd5;
+            border-radius: 10px;
             min-height: 30px;
+            background: #ffffff;
         }
 
         #history {
@@ -60,15 +119,30 @@
         }
 
         .history-item {
-            border: 1px solid #ccc;
-            border-radius: 8px;
+            border: 1px solid #dfccd5;
+            border-radius: 10px;
             padding: 12px;
             margin-bottom: 10px;
+            background: #ffffff;
+            line-height: 1.6;
+        }
+
+        .history-date {
+            font-weight: bold;
+        }
+
+        .history-time {
+            font-size: 17px;
+        }
+
+        .history-result {
+            font-size: 16px;
         }
 
         #clearHistory {
             font-size: 16px;
             padding: 8px 16px;
+            background: #b9a5ae;
         }
     </style>
 </head>
@@ -80,11 +154,19 @@
     <p>勤務日</p>
     <input type="date" id="date">
 
-    <p>出勤時間</p>
-    <input type="time" id="start">
+    <div class="time-row">
 
-    <p>退勤時間</p>
-    <input type="time" id="end">
+        <div>
+            <p>出勤時間</p>
+            <input type="time" id="start">
+        </div>
+
+        <div>
+            <p>退勤時間</p>
+            <input type="time" id="end">
+        </div>
+
+    </div>
 
     <p>休憩時間</p>
     <select id="breakMode">
@@ -112,188 +194,429 @@
         const startInput = document.getElementById('start');
         const endInput = document.getElementById('end');
         const breakModeInput = document.getElementById('breakMode');
-        const calculateButton = document.getElementById('calculate');
-        const resetButton = document.getElementById('reset');
-        const result = document.getElementById('result');
-        const history = document.getElementById('history');
-        const clearHistoryButton = document.getElementById('clearHistory');
 
-        // 前回の入力を読み込む
-        const savedData = localStorage.getItem('workTimeData');
+        const calculateButton =
+            document.getElementById('calculate');
 
-        if (savedData) {
-            const data = JSON.parse(savedData);
+        const resetButton =
+            document.getElementById('reset');
 
-            dateInput.value = data.date || '';
-            startInput.value = data.start || '';
-            endInput.value = data.end || '';
-            breakModeInput.value = data.breakMode || 'auto';
-            result.textContent = data.result || '';
+        const result =
+            document.getElementById('result');
+
+        const history =
+            document.getElementById('history');
+
+        const clearHistoryButton =
+            document.getElementById('clearHistory');
+
+
+        /*
+         * 今日の日付を取得
+         */
+        function getToday() {
+
+            const today = new Date();
+
+            const year = today.getFullYear();
+
+            const month =
+                String(today.getMonth() + 1).padStart(2, '0');
+
+            const day =
+                String(today.getDate()).padStart(2, '0');
+
+            return year + '-' + month + '-' + day;
         }
 
-        // 履歴を表示
+
+        /*
+         * 前回の入力を読み込む
+         */
+        const savedData =
+            localStorage.getItem('workTimeData');
+
+        if (savedData) {
+
+            const data = JSON.parse(savedData);
+
+            dateInput.value = data.date || getToday();
+
+            startInput.value = data.start || '';
+
+            endInput.value = data.end || '';
+
+            breakModeInput.value =
+                data.breakMode || 'auto';
+
+            result.textContent =
+                data.result || '';
+
+        } else {
+
+            dateInput.value = getToday();
+        }
+
+
+        /*
+         * 履歴を表示
+         */
         function displayHistory() {
-            const savedHistory = localStorage.getItem('workTimeHistory');
+
+            const savedHistory =
+                localStorage.getItem('workTimeHistory');
 
             if (!savedHistory) {
-                history.innerHTML = '<p>まだ履歴はありません。</p>';
+
+                history.innerHTML =
+                    '<p>まだ履歴はありません。</p>';
+
                 return;
             }
 
-            const historyData = JSON.parse(savedHistory);
+            const historyData =
+                JSON.parse(savedHistory);
 
             if (historyData.length === 0) {
-                history.innerHTML = '<p>まだ履歴はありません。</p>';
+
+                history.innerHTML =
+                    '<p>まだ履歴はありません。</p>';
+
                 return;
             }
 
             history.innerHTML = '';
 
             historyData.forEach(function(item) {
-                const div = document.createElement('div');
-                div.className = 'history-item';
 
-                div.textContent =
-                    item.date + '　' +
-                    item.start + ' → ' +
-                    item.end +
-                    '　休憩' + item.breakTime + '分　' +
+                const div =
+                    document.createElement('div');
+
+                div.className =
+                    'history-item';
+
+
+                const dateDiv =
+                    document.createElement('div');
+
+                dateDiv.className =
+                    'history-date';
+
+                dateDiv.textContent =
+                    item.date;
+
+
+                const timeDiv =
+                    document.createElement('div');
+
+                timeDiv.className =
+                    'history-time';
+
+                timeDiv.textContent =
+                    item.start + ' → ' + item.end;
+
+
+                const resultDiv =
+                    document.createElement('div');
+
+                resultDiv.className =
+                    'history-result';
+
+                resultDiv.textContent =
+                    '休憩 ' +
+                    item.breakTime +
+                    '分　' +
                     item.result;
+
+
+                div.appendChild(dateDiv);
+
+                div.appendChild(timeDiv);
+
+                div.appendChild(resultDiv);
 
                 history.appendChild(div);
             });
         }
 
+
         displayHistory();
 
-        calculateButton.addEventListener('click', function() {
 
-            const date = dateInput.value;
-            const start = startInput.value;
-            const end = endInput.value;
-            const breakMode = breakModeInput.value;
+        /*
+         * 計算
+         */
+        calculateButton.addEventListener(
+            'click',
+            function() {
 
-            if (date === '') {
-                result.textContent = '勤務日を入力してください';
-                return;
-            }
+                const date =
+                    dateInput.value;
 
-            if (start === '' || end === '') {
-                result.textContent = '出勤時間と退勤時間を入力してください';
-                return;
-            }
+                const start =
+                    startInput.value;
 
-            const startParts = start.split(':');
-            const endParts = end.split(':');
+                const end =
+                    endInput.value;
 
-            const startMinutes =
-                Number(startParts[0]) * 60 +
-                Number(startParts[1]);
+                const breakMode =
+                    breakModeInput.value;
 
-            const endMinutes =
-                Number(endParts[0]) * 60 +
-                Number(endParts[1]);
 
-            let elapsedMinutes = endMinutes - startMinutes;
+                if (date === '') {
 
-            // 日をまたぐ勤務
-            if (elapsedMinutes < 0) {
-                elapsedMinutes += 24 * 60;
-            }
+                    result.textContent =
+                        '勤務日を入力してください';
 
-            let breakTime;
-
-            if (breakMode === 'auto') {
-
-                /*
-                 * 自動の場合
-                 *
-                 * 休憩なしで計算すると
-                 * 6時間以下 → 休憩0分
-                 * 6時間超 → 45分以上必要
-                 * 8時間超 → 60分以上必要
-                 *
-                 * ただし、休憩を入れると実労働時間が変わるため、
-                 * 45分を入れても8時間を超える場合は60分にする。
-                 */
-
-                if (elapsedMinutes <= 6 * 60) {
-                    breakTime = 0;
-
-                } else if (elapsedMinutes - 45 <= 8 * 60) {
-                    breakTime = 45;
-
-                } else {
-                    breakTime = 60;
+                    return;
                 }
 
-            } else {
-                // 手動の場合
-                breakTime = Number(breakMode);
+
+                if (start === '' || end === '') {
+
+                    result.textContent =
+                        '出勤時間と退勤時間を入力してください';
+
+                    return;
+                }
+
+
+                /*
+                 * 時刻を分に変換
+                 */
+                const startParts =
+                    start.split(':');
+
+                const endParts =
+                    end.split(':');
+
+
+                const startMinutes =
+                    Number(startParts[0]) * 60 +
+                    Number(startParts[1]);
+
+
+                const endMinutes =
+                    Number(endParts[0]) * 60 +
+                    Number(endParts[1]);
+
+
+                /*
+                 * 勤務時間
+                 */
+                let elapsedMinutes =
+                    endMinutes - startMinutes;
+
+
+                /*
+                 * 日をまたぐ勤務
+                 */
+                if (elapsedMinutes < 0) {
+
+                    elapsedMinutes += 24 * 60;
+                }
+
+
+                /*
+                 * 休憩時間
+                 */
+                let breakTime;
+
+
+                if (breakMode === 'auto') {
+
+                    /*
+                     * 自動休憩
+                     *
+                     * 6時間以下 → 0分
+                     * 6時間超 → 45分
+                     * 45分では実働8時間を超える場合 → 60分
+                     */
+
+                    if (elapsedMinutes <= 6 * 60) {
+
+                        breakTime = 0;
+
+                    } else if (
+                        elapsedMinutes - 45 <= 8 * 60
+                    ) {
+
+                        breakTime = 45;
+
+                    } else {
+
+                        breakTime = 60;
+                    }
+
+                } else {
+
+                    breakTime =
+                        Number(breakMode);
+                }
+
+
+                /*
+                 * 実働時間
+                 */
+                const workMinutes =
+                    elapsedMinutes - breakTime;
+
+
+                if (workMinutes < 0) {
+
+                    result.textContent =
+                        '休憩時間が長すぎます';
+
+                    return;
+                }
+
+
+                const hours =
+                    Math.floor(workMinutes / 60);
+
+                const minutes =
+                    workMinutes % 60;
+
+
+                const resultText =
+                    '実働時間：' +
+                    hours +
+                    '時間' +
+                    minutes +
+                    '分';
+
+
+                result.textContent =
+                    resultText +
+                    '（休憩' +
+                    breakTime +
+                    '分）';
+
+
+                /*
+                 * 前回の入力を保存
+                 */
+                localStorage.setItem(
+                    'workTimeData',
+                    JSON.stringify({
+
+                        date: date,
+
+                        start: start,
+
+                        end: end,
+
+                        breakMode: breakMode,
+
+                        result:
+                            resultText +
+                            '（休憩' +
+                            breakTime +
+                            '分）'
+                    })
+                );
+
+
+                /*
+                 * 履歴を読み込む
+                 */
+                let historyData =
+                    JSON.parse(
+                        localStorage.getItem(
+                            'workTimeHistory'
+                        ) || '[]'
+                    );
+
+
+                /*
+                 * 履歴に追加
+                 */
+                historyData.unshift({
+
+                    date: date,
+
+                    start: start,
+
+                    end: end,
+
+                    breakTime: breakTime,
+
+                    result: resultText
+                });
+
+
+                /*
+                 * 履歴を保存
+                 */
+                localStorage.setItem(
+                    'workTimeHistory',
+                    JSON.stringify(historyData)
+                );
+
+
+                displayHistory();
             }
+        );
 
-            const workMinutes = elapsedMinutes - breakTime;
 
-            if (workMinutes < 0) {
-                result.textContent = '休憩時間が長すぎます';
-                return;
+        /*
+         * リセット
+         */
+        resetButton.addEventListener(
+            'click',
+            function() {
+
+                dateInput.value =
+                    getToday();
+
+                startInput.value = '';
+
+                endInput.value = '';
+
+                breakModeInput.value =
+                    'auto';
+
+                result.textContent = '';
+
+
+                /*
+                 * 前回入力だけ削除
+                 * 履歴は残す
+                 */
+                localStorage.removeItem(
+                    'workTimeData'
+                );
             }
+        );
 
-            const hours = Math.floor(workMinutes / 60);
-            const minutes = workMinutes % 60;
 
-            const resultText =
-                '実働時間：' + hours + '時間' + minutes + '分';
+        /*
+         * 履歴を全削除
+         */
+        clearHistoryButton.addEventListener(
+            'click',
+            function() {
 
-            result.textContent =
-                resultText + '（休憩' + breakTime + '分）';
+                const shouldClear =
+                    confirm(
+                        '履歴をすべて削除しますか？'
+                    );
 
-            // 前回の入力を保存
-            localStorage.setItem('workTimeData', JSON.stringify({
-                date: date,
-                start: start,
-                end: end,
-                breakMode: breakMode,
-                result: resultText + '（休憩' + breakTime + '分）'
-            }));
 
-            // 履歴を読み込む
-            let historyData = JSON.parse(
-                localStorage.getItem('workTimeHistory') || '[]'
-            );
+                if (!shouldClear) {
+                    return;
+                }
 
-            // 新しい履歴を追加
-            historyData.unshift({
-                date: date,
-                start: start,
-                end: end,
-                breakTime: breakTime,
-                result: resultText
-            });
 
-            // 履歴を保存
-            localStorage.setItem(
-                'workTimeHistory',
-                JSON.stringify(historyData)
-            );
+                localStorage.removeItem(
+                    'workTimeHistory'
+                );
 
-            displayHistory();
-        });
 
-        resetButton.addEventListener('click', function() {
-            dateInput.value = '';
-            startInput.value = '';
-            endInput.value = '';
-            breakModeInput.value = 'auto';
-            result.textContent = '';
+                displayHistory();
+            }
+        );
 
-            localStorage.removeItem('workTimeData');
-        });
-
-        clearHistoryButton.addEventListener('click', function() {
-            localStorage.removeItem('workTimeHistory');
-            displayHistory();
-        });
     </script>
 
 </body>
