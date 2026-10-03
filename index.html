@@ -87,7 +87,8 @@
     <input type="time" id="end">
 
     <p>休憩時間</p>
-    <select id="break">
+    <select id="breakMode">
+        <option value="auto">自動</option>
         <option value="0">なし</option>
         <option value="15">15分</option>
         <option value="30">30分</option>
@@ -110,7 +111,7 @@
         const dateInput = document.getElementById('date');
         const startInput = document.getElementById('start');
         const endInput = document.getElementById('end');
-        const breakInput = document.getElementById('break');
+        const breakModeInput = document.getElementById('breakMode');
         const calculateButton = document.getElementById('calculate');
         const resetButton = document.getElementById('reset');
         const result = document.getElementById('result');
@@ -123,11 +124,11 @@
         if (savedData) {
             const data = JSON.parse(savedData);
 
-            dateInput.value = data.date;
-            startInput.value = data.start;
-            endInput.value = data.end;
-            breakInput.value = data.breakTime;
-            result.textContent = data.result;
+            dateInput.value = data.date || '';
+            startInput.value = data.start || '';
+            endInput.value = data.end || '';
+            breakModeInput.value = data.breakMode || 'auto';
+            result.textContent = data.result || '';
         }
 
         // 履歴を表示
@@ -155,8 +156,8 @@
                 div.textContent =
                     item.date + '　' +
                     item.start + ' → ' +
-                    item.end + '　休憩' +
-                    item.breakTime + '分　' +
+                    item.end +
+                    '　休憩' + item.breakTime + '分　' +
                     item.result;
 
                 history.appendChild(div);
@@ -170,7 +171,7 @@
             const date = dateInput.value;
             const start = startInput.value;
             const end = endInput.value;
-            const breakTime = Number(breakInput.value);
+            const breakMode = breakModeInput.value;
 
             if (date === '') {
                 result.textContent = '勤務日を入力してください';
@@ -193,13 +194,45 @@
                 Number(endParts[0]) * 60 +
                 Number(endParts[1]);
 
-            let workMinutes = endMinutes - startMinutes;
+            let elapsedMinutes = endMinutes - startMinutes;
 
-            if (workMinutes < 0) {
-                workMinutes += 24 * 60;
+            // 日をまたぐ勤務
+            if (elapsedMinutes < 0) {
+                elapsedMinutes += 24 * 60;
             }
 
-            workMinutes -= breakTime;
+            let breakTime;
+
+            if (breakMode === 'auto') {
+
+                /*
+                 * 自動の場合
+                 *
+                 * 休憩なしで計算すると
+                 * 6時間以下 → 休憩0分
+                 * 6時間超 → 45分以上必要
+                 * 8時間超 → 60分以上必要
+                 *
+                 * ただし、休憩を入れると実労働時間が変わるため、
+                 * 45分を入れても8時間を超える場合は60分にする。
+                 */
+
+                if (elapsedMinutes <= 6 * 60) {
+                    breakTime = 0;
+
+                } else if (elapsedMinutes - 45 <= 8 * 60) {
+                    breakTime = 45;
+
+                } else {
+                    breakTime = 60;
+                }
+
+            } else {
+                // 手動の場合
+                breakTime = Number(breakMode);
+            }
+
+            const workMinutes = elapsedMinutes - breakTime;
 
             if (workMinutes < 0) {
                 result.textContent = '休憩時間が長すぎます';
@@ -212,15 +245,16 @@
             const resultText =
                 '実働時間：' + hours + '時間' + minutes + '分';
 
-            result.textContent = resultText;
+            result.textContent =
+                resultText + '（休憩' + breakTime + '分）';
 
             // 前回の入力を保存
             localStorage.setItem('workTimeData', JSON.stringify({
                 date: date,
                 start: start,
                 end: end,
-                breakTime: breakTime,
-                result: resultText
+                breakMode: breakMode,
+                result: resultText + '（休憩' + breakTime + '分）'
             }));
 
             // 履歴を読み込む
@@ -250,10 +284,9 @@
             dateInput.value = '';
             startInput.value = '';
             endInput.value = '';
-            breakInput.value = '0';
+            breakModeInput.value = 'auto';
             result.textContent = '';
 
-            // 前回の入力だけ削除
             localStorage.removeItem('workTimeData');
         });
 
