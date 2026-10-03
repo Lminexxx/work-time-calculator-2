@@ -138,7 +138,12 @@
         .history-result {
             font-size: 16px;
         }
-
+.history-delete {
+    font-size: 14px;
+    padding: 6px 12px;
+    margin-top: 8px;
+    background: #c8b9c0;
+}
         #clearHistory {
             font-size: 16px;
             padding: 8px 16px;
@@ -331,11 +336,53 @@
 
                 div.appendChild(dateDiv);
 
-                div.appendChild(timeDiv);
+div.appendChild(timeDiv);
 
-                div.appendChild(resultDiv);
+div.appendChild(resultDiv);
 
-                history.appendChild(div);
+
+const deleteButton =
+    document.createElement('button');
+
+deleteButton.className =
+    'history-delete';
+
+deleteButton.textContent =
+    '削除';
+
+
+deleteButton.addEventListener(
+    'click',
+    function() {
+
+        const savedHistory =
+            JSON.parse(
+                localStorage.getItem(
+                    'workTimeHistory'
+                ) || '[]'
+            );
+
+
+        savedHistory.splice(
+            historyData.indexOf(item),
+            1
+        );
+
+
+        localStorage.setItem(
+            'workTimeHistory',
+            JSON.stringify(savedHistory)
+        );
+
+
+        displayHistory();
+    }
+);
+
+
+div.appendChild(deleteButton);
+
+history.appendChild(div);
             });
         }
 
