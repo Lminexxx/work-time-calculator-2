@@ -472,31 +472,18 @@ history.appendChild(div);
 
                 if (breakMode === 'auto') {
 
-    /*
-     * 自動休憩
-     *
-     * 6時間30分以下 → 30分
-     * 6時間30分超〜8時間30分以下 → 45分
-     * 8時間30分超 → 60分
-     */
-
     if (elapsedMinutes <= 6 * 60 + 30) {
-
         breakTime = 30;
 
-    } else if (elapsedMinutes <= 8 * 60 + 30) {
-
+    } else if (elapsedMinutes <= 8 * 60) {
         breakTime = 45;
 
     } else {
-
         breakTime = 60;
     }
 
 } else {
-
-    breakTime =
-        Number(breakMode);
+    breakTime = Number(breakMode);
 }
 
 
