@@ -484,16 +484,15 @@ history.appendChild(div);
 
                         breakTime = 0;
 
-                    } else if (
-                        elapsedMinutes - 45 <= 8 * 60
-                    ) {
+                    if (elapsedMinutes <= 6 * 60) {
+    breakTime = 0;
 
-                        breakTime = 45;
+} else if (elapsedMinutes <= 8 * 60) {
+    breakTime = 45;
 
-                    } else {
-
-                        breakTime = 60;
-                    }
+} else {
+    breakTime = 60;
+}
 
                 } else {
 
