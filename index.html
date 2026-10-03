@@ -84,6 +84,18 @@
         const resetButton = document.getElementById('reset');
         const result = document.getElementById('result');
 
+        // 前回の記録を読み込む
+        const savedData = localStorage.getItem('workTimeData');
+
+        if (savedData) {
+            const data = JSON.parse(savedData);
+
+            startInput.value = data.start;
+            endInput.value = data.end;
+            breakInput.value = data.breakTime;
+            result.textContent = data.result;
+        }
+
         calculateButton.addEventListener('click', function() {
 
             const start = startInput.value;
@@ -122,8 +134,18 @@
             const hours = Math.floor(workMinutes / 60);
             const minutes = workMinutes % 60;
 
-            result.textContent =
+            const resultText =
                 '実働時間：' + hours + '時間' + minutes + '分';
+
+            result.textContent = resultText;
+
+            // 今回の記録を保存
+            localStorage.setItem('workTimeData', JSON.stringify({
+                start: start,
+                end: end,
+                breakTime: breakTime,
+                result: resultText
+            }));
         });
 
         resetButton.addEventListener('click', function() {
@@ -131,6 +153,9 @@
             endInput.value = '';
             breakInput.value = '0';
             result.textContent = '';
+
+            // 保存していた前回の記録も削除
+            localStorage.removeItem('workTimeData');
         });
     </script>
 
