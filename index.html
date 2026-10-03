@@ -472,33 +472,32 @@ history.appendChild(div);
 
                 if (breakMode === 'auto') {
 
-                    /*
-                     * 自動休憩
-                     *
-                     * 6時間以下 → 0分
-                     * 6時間超 → 45分
-                     * 45分では実働8時間を超える場合 → 60分
-                     */
+    /*
+     * 自動休憩
+     *
+     * 6時間30分以下 → 30分
+     * 6時間30分超〜8時間30分以下 → 45分
+     * 8時間30分超 → 60分
+     */
 
-                    if (elapsedMinutes <= 6 * 60) {
+    if (elapsedMinutes <= 6 * 60 + 30) {
 
-                        breakTime = 0;
+        breakTime = 30;
 
-                    if (elapsedMinutes <= 6 * 60) {
-    breakTime = 0;
+    } else if (elapsedMinutes <= 8 * 60 + 30) {
 
-} else if (elapsedMinutes <= 8 * 60) {
-    breakTime = 45;
+        breakTime = 45;
+
+    } else {
+
+        breakTime = 60;
+    }
 
 } else {
-    breakTime = 60;
+
+    breakTime =
+        Number(breakMode);
 }
-
-                } else {
-
-                    breakTime =
-                        Number(breakMode);
-                }
 
 
                 /*
